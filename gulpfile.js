@@ -1,4 +1,6 @@
+// Plugins
 const gulp = require("gulp");
+const htmlmin = require("gulp-htmlmin");
 const imagemin = require("gulp-imagemin");
 const concat = require("gulp-concat");
 const terser = require("gulp-terser");
@@ -19,8 +21,10 @@ const jsPath = "./js/**/*.js";
 const cssPath = "./css/**/*.css";
 const htmlPath = "./*.html";
 
-function copyHtml() {
-  return src("*.html").pipe(gulp.dest("_dist"));
+function htmlTask() {
+  return src("*.html")
+    .pipe(htmlmin({ collapseWhitespace: true, removeComments: true }))
+    .pipe(gulp.dest("_dist"));
 }
 
 function imgTask() {
@@ -36,20 +40,20 @@ function svgTask() {
 }
 
 function jsTask() {
-  console.log(">>> Executando jsTask");
   return src(jsPath)
     .pipe(sourcemaps.init())
     .pipe(concat("all.min.js"))
     .pipe(modernizr())
     .pipe(terser())
     .pipe(sourcemaps.write("."))
-    .pipe(uglify({ ie: true }))
+    .pipe(uglify())
     .pipe(dest("_dist/js"));
 }
 
 function cssTask() {
   const plugins = [autoprefixer()];
   // Para configurar as opções de minificação do cleanCss, basta alterar o options
+  // Lista completa de plugins do postCSS no site > https://www.postcss.parts/
   // Você poderá verificar todas as regras do level 1 e mais na documentação > https://www.npmjs.com/package/clean-css
 
   var options = {
@@ -97,7 +101,7 @@ function watchTask() {
   watch(
     [htmlPath, cssPath, jsPath],
     { interval: 1000 },
-    parallel(jsTask, cssTask, useRef)
+    parallel(htmlTask, jsTask, cssTask, useRef)
   );
 }
 
@@ -107,12 +111,12 @@ function useRef() {
 
 exports.imgTask = imgTask;
 exports.svgTask = svgTask;
+exports.htmlTask = htmlTask;
 exports.jsTask = jsTask;
 exports.cssTask = cssTask;
-exports.copyHtml = copyHtml;
 exports.useRef = useRef;
 
 exports.default = series(
-  parallel(imgTask, svgTask, jsTask, cssTask, useRef),
+  parallel(imgTask, svgTask, htmlTask, jsTask, cssTask, useRef),
   watchTask
 );
