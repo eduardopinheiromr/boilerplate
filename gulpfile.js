@@ -10,6 +10,9 @@ const purgecss = require("gulp-purgecss");
 const modernizr = require("gulp-modernizr");
 const uglify = require("gulp-uglify");
 const useref = require("gulp-useref");
+const svgmin = require("gulp-svgmin");
+const svgstore = require("gulp-svgstore");
+const rename = require("gulp-rename");
 const { src, series, parallel, dest, watch } = require("gulp");
 
 const jsPath = "./js/**/*.js";
@@ -21,7 +24,15 @@ function copyHtml() {
 }
 
 function imgTask() {
-  return src("img/**/*").pipe(imagemin()).pipe(gulp.dest("_dist/img"));
+  return src("img/*").pipe(imagemin()).pipe(gulp.dest("_dist/img"));
+}
+
+function svgTask() {
+  return src("img/**/*.svg")
+    .pipe(svgmin())
+    .pipe(svgstore())
+    .pipe(rename({ basename: "sprite" }))
+    .pipe(gulp.dest("_dist/img/svg"));
 }
 
 function jsTask() {
@@ -32,15 +43,24 @@ function jsTask() {
     .pipe(modernizr())
     .pipe(terser())
     .pipe(sourcemaps.write("."))
-    .pipe(uglify())
+    .pipe(uglify({ ie: true }))
     .pipe(dest("_dist/js"));
 }
 
-// Para configurar as opções de minificação do cleanCss, basta alterar o options
 function cssTask() {
   const plugins = [autoprefixer()];
+  // Para configurar as opções de minificação do cleanCss, basta alterar o options
+  // Você poderá verificar todas as regras do level 1 e mais na documentação > https://www.npmjs.com/package/clean-css
+
   var options = {
     level: {
+      1: {
+        all: true,
+        normalizeUrls: false,
+        roundingPrecision: false,
+        specialComments: 0,
+        semicolonAfterLastProperty: false,
+      },
       2: {
         mergeAdjacentRules: true, // controls adjacent rules merging; defaults to true
         mergeIntoShorthands: true, // controls merging properties into shorthands; defaults to true
@@ -85,9 +105,14 @@ function useRef() {
   return gulp.src("./*.html").pipe(useref()).pipe(gulp.dest("_dist"));
 }
 
+exports.imgTask = imgTask;
+exports.svgTask = svgTask;
 exports.jsTask = jsTask;
 exports.cssTask = cssTask;
 exports.copyHtml = copyHtml;
 exports.useRef = useRef;
 
-exports.default = series(parallel(imgTask, jsTask, cssTask, useRef), watchTask);
+exports.default = series(
+  parallel(imgTask, svgTask, jsTask, cssTask, useRef),
+  watchTask
+);
