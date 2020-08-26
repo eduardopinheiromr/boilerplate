@@ -117,6 +117,7 @@ exports.cssTask = cssTask;
 exports.useRef = useRef;
 
 exports.default = series(
-  parallel(imgTask, svgTask, htmlTask, jsTask, cssTask, useRef),
+  parallel(imgTask, svgTask, jsTask, cssTask, useRef),
+  htmlTask,
   watchTask
 );
